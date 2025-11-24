@@ -1,0 +1,20 @@
+{
+  "name": "hikarin-vn-viewer",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "./dist/hikarin-vn-viewer.umd.js",
+  "module": "./dist/hikarin-vn-viewer.es.js",
+  "exports": {
+    ".": {
+      "import": "./dist/hikarin-vn-viewer.es.js",
+      "require": "./dist/hikarin-vn-viewer.umd.js"
+    }
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build"
+  },
+  "devDependencies": {
+    "vite": "^5.0.0"
+  }
+}
