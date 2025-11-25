@@ -11,55 +11,47 @@ export class VNRenderer {
             /* RESET */
             .hvn-wrapper * { box-sizing: border-box; user-select: none; -webkit-user-select: none; }
             
-            /* WRAPPER: Flex column to stack Stage and Debugger */
+            /* WRAPPER */
             .hvn-wrapper {
-                width: 100%;
-                height: 100%;
-                display: flex;
-                flex-direction: column;
-                background: #111;
-                font-family: 'Segoe UI', Consolas, sans-serif;
+                width: 100%; height: 100%; display: flex; flex-direction: column;
+                background: #111; font-family: 'Segoe UI', Consolas, sans-serif;
             }
 
-            /* STAGE: Keeps 16:9 and fits in wrapper */
+            /* STAGE */
             .hvn-stage {
-                position: relative; 
-                width: 100%; 
-                aspect-ratio: 16 / 9; /* FORCE 16:9 */
-                background: #000; 
-                overflow: hidden; 
-                color: white;
-                flex-shrink: 0; /* Don't shrink if debug panel opens */
+                position: relative; width: 100%; aspect-ratio: 16 / 9; 
+                background: #000; overflow: hidden; color: white; flex-shrink: 0; 
             }
 
             .hvn-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
             
             /* UI Layer */
             .hvn-ui-layer { 
-                z-index: 50; 
-                pointer-events: auto;
-                display: flex; flex-direction: column; justify-content: flex-end; 
-                padding: 20px;
+                z-index: 50; pointer-events: auto; display: flex; flex-direction: column; 
+                justify-content: flex-end; padding: 20px;
             }
 
             /* Sprites */
             .hvn-sprite {
                 position: absolute; background-size: contain; background-repeat: no-repeat;
-                background-position: center bottom; transition: opacity 0.2s;
-                z-index: 10;
+                background-position: center bottom; transition: opacity 0.2s; z-index: 10;
+            }
+            
+            /* ERROR STATE FOR MISSING IMAGES */
+            .hvn-missing-asset {
+                border: 2px solid red !important;
+                background-color: rgba(255, 0, 0, 0.2);
+            }
+            .hvn-missing-asset::after {
+                content: 'MISSING'; position: absolute; top: 50%; left: 50%;
+                transform: translate(-50%, -50%); color: red; font-weight: bold; background: black;
             }
 
             /* Dialogue Box */
             .hvn-dialogue-box {
-                background: rgba(0, 0, 0, 0.85); 
-                border: 2px solid #555; 
-                border-radius: 4px;
-                padding: 20px; 
-                min-height: 140px; /* Fixed height so it doesn't jump */
-                display: none;
-                margin-bottom: 0px; 
-                pointer-events: auto;
-                box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+                background: rgba(0, 0, 0, 0.85); border: 2px solid #555; border-radius: 4px;
+                padding: 20px; min-height: 140px; display: none; margin-bottom: 0px; 
+                pointer-events: auto; box-shadow: 0 4px 10px rgba(0,0,0,0.5);
             }
             .hvn-dialogue-box.active { display: block !important; }
             
@@ -68,10 +60,8 @@ export class VNRenderer {
 
             /* Choices */
             .hvn-choice-layer {
-                z-index: 100;
-                pointer-events: auto; 
-                display: flex; flex-direction: column; align-items: center; justify-content: center;
-                gap: 15px; background: rgba(0,0,0,0.8); 
+                z-index: 100; pointer-events: auto; display: flex; flex-direction: column; 
+                align-items: center; justify-content: center; gap: 15px; background: rgba(0,0,0,0.8); 
                 display: none;
             }
             .hvn-choice-layer.active { display: flex !important; }
@@ -83,17 +73,10 @@ export class VNRenderer {
             }
             .hvn-choice-btn:hover { background: #ffcc00; border-color: #fff; transform: scale(1.05); }
 
-            /* DEBUG PANEL: Sit BELOW the stage, not inside it */
+            /* DEBUG PANEL */
             .hvn-debug-panel {
-                width: 100%;
-                height: 150px;
-                background: #222;
-                border-top: 1px solid #444;
-                display: flex;
-                font-size: 12px;
-                color: #fff;
-                overflow: hidden;
-                flex-shrink: 0; /* Prevent squishing */
+                width: 100%; height: 150px; background: #222; border-top: 1px solid #444;
+                display: flex; font-size: 12px; color: #fff; overflow: hidden; flex-shrink: 0; 
             }
             
             .hvn-debug-col { flex: 1; padding: 10px; overflow-y: auto; border-right: 1px solid #333; }
@@ -106,6 +89,35 @@ export class VNRenderer {
         this._bindEvents();
     }
 
+    // --- NEW: Image Verification Helper ---
+    _verifyImageLoad(url, contextMsg, targetElement) {
+        // Create a ghost image to test if the browser can load it
+        const img = new Image();
+        img.src = url;
+        
+        img.onerror = () => {
+            const errorMsg = `[HikarinVN Error] Failed to load image: "${url}"`;
+            const context = `Context: ${contextMsg}`;
+            
+            // 1. Log to Console
+            console.group(errorMsg);
+            console.error(context);
+            console.warn("Check if the file exists in your assets folder and the path is correct.");
+            console.groupEnd();
+
+            // 2. If Debug Mode, visually mark the element on screen
+            if(this.debugMode && targetElement) {
+                targetElement.classList.add('hvn-missing-asset');
+                targetElement.title = `MISSING: ${url}`;
+            }
+        };
+
+        img.onload = () => {
+            // Success: Remove error styling if it was applied previously (in case of re-use)
+            if(targetElement) targetElement.classList.remove('hvn-missing-asset');
+        };
+    }
+
     _injectStyles() {
         if(!document.getElementById('hvn-embedded-styles')) {
             const style = document.createElement('style');
@@ -116,7 +128,6 @@ export class VNRenderer {
     }
 
     _buildDOM() {
-        // NOTE: We now wrap everything in a Flex Column .hvn-wrapper
         this.container.innerHTML = `
             <div class="hvn-wrapper">
                 <div class="hvn-stage">
@@ -133,7 +144,6 @@ export class VNRenderer {
                     <div class="hvn-layer hvn-choice-layer"></div>
                 </div>
                 
-                <!-- Debug Panel is now a SIBLING to stage, sitting below it -->
                 ${this.debugMode ? `
                 <div class="hvn-debug-panel">
                     <div class="hvn-debug-col"><span class="hvn-d-title">GLOBALS</span><div class="d-glob"></div></div>
@@ -143,7 +153,6 @@ export class VNRenderer {
             </div>
         `;
 
-        // Cache elements
         this.elBg = this.container.querySelector('.hvn-bg-layer');
         this.elSprites = this.container.querySelector('.hvn-sprite-layer');
         this.elDBox = this.container.querySelector('.hvn-dialogue-box');
@@ -159,7 +168,6 @@ export class VNRenderer {
     }
 
     _bindEvents() {
-        // Only click the stage to advance, ignore debug panel clicks
         this.container.querySelector('.hvn-stage').addEventListener('click', (e) => {
             if(e.target.closest('.hvn-choice-layer')) return;
             if(this.runtime.state === this.runtime.STATES.WAITING) {
@@ -212,10 +220,18 @@ export class VNRenderer {
             el.style.height = `${heightPct}%`;
 
             const imgUrl = this.assetsPath + data.finalLocation;
+            
+            // --- UPDATED: Verify Image ---
+            this._verifyImageLoad(imgUrl, `Sprite [${data.sprite}]`, el);
+
             el.style.backgroundImage = `url('${imgUrl}')`;
             
             if(this.debugMode) {
-                el.style.border = '1px dashed #0ff';
+                // If we are debugging, keep the debug border, 
+                // but the _verifyImageLoad will override it with RED if broken.
+                if(!el.classList.contains('hvn-missing-asset')) {
+                    el.style.border = '1px dashed #0ff';
+                }
                 el.innerText = `${data.sprite}`;
                 el.style.display = 'flex'; el.style.alignItems='center'; el.style.justifyContent='center';
                 el.style.textShadow = '0 0 4px #000';
@@ -232,6 +248,10 @@ export class VNRenderer {
 
         this.runtime.events.onBackground = (path) => {
             const imgUrl = this.assetsPath + path;
+            
+            // --- UPDATED: Verify Image ---
+            this._verifyImageLoad(imgUrl, "Background Layer", this.elBg);
+
             this.elBg.style.background = `url('${imgUrl}') center/cover no-repeat`;
         };
 

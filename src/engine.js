@@ -132,7 +132,7 @@ export class VisualNovelRuntime {
 
             case "show_sprite":
                 // Handle dynamic locations (e.g. outfits)
-                const finalLoc = this._parseString(step.dyn_location || step.location);
+                const finalLoc = this._parseString(step.location);
                 if(this.events.onShowSprite) this.events.onShowSprite({ ...step, finalLocation: finalLoc });
                 proceed();
                 break;
