@@ -31,10 +31,15 @@ export class VisualNovelRuntime {
         }
     }
 
-    loadScript(jsonSource, savedGlobals = {}) {
+    loadScript(jsonSource, savedGlobals = {}, savedVariables = {}) {
         this.script = JSON.parse(JSON.stringify(jsonSource));
+        
+        // Restore Globals
         this.globals = { ...savedGlobals };
-        this.variables = {}; 
+        
+        // CHANGED: Restore Locals instead of wiping them
+        this.variables = { ...savedVariables }; 
+        
         this.currentIndex = 0; 
         this.state = this.STATES.IDLE;
         this._log("FLOW", "Script Loaded. Total Steps: " + this.script.length);
