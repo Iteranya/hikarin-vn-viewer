@@ -51,13 +51,22 @@ export class VisualNovelRuntime {
         
         this.state = this.STATES.PLAYING;
 
+        // 1. If no specific label is forced, check if we have an autosave variable
+        if (!startLabel && this.variables['_autosave']) {
+            const savedLabel = this.variables['_autosave'];
+            this._log("FLOW", `Found '_autosave' variable. Resuming at label: '${savedLabel}'`);
+            startLabel = savedLabel;
+        }
+
+        // 2. Execute Jump or Start from 0
         if (startLabel) {
-            this._log("FLOW", `Resuming at label: ${startLabel}`);
+            this._log("FLOW", `Starting execution at label: ${startLabel}`);
             this._jump(startLabel);
         } else {
             this.currentIndex = 0;
             this._step();
         }
+        
         this._updateDebug();
     }
 
