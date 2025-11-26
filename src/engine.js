@@ -41,10 +41,24 @@ export class VisualNovelRuntime {
         this._updateDebug();
     }
 
-    start() { 
+    start(startLabel = null) { 
         if(this.script.length === 0) return;
+        
         this.state = this.STATES.PLAYING;
-        this._step();
+
+        if (startLabel) {
+            this._log("FLOW", `Resuming at label: ${startLabel}`);
+            this._jump(startLabel);
+        } else {
+            this.currentIndex = 0;
+            this._step();
+        }
+        this._updateDebug();
+    }
+
+    stop() {
+        this.state = this.STATES.IDLE;
+        this._updateDebug();
     }
 
     advance() {
@@ -101,7 +115,12 @@ export class VisualNovelRuntime {
             case "start": 
             case "meta":
             case "command":
-                if(step.type === "meta") this._processMeta(step);
+                if(step.type === "meta") {
+                    // Create var logic
+                    if(step.action === "create_var") this.variables[step.var] = step.init;
+                    if(step.action === "create_global" && this.globals[step.var] === undefined) this.globals[step.var] = step.init;
+                    this._updateDebug();
+                }
                 proceed();
                 break;
             
@@ -110,7 +129,9 @@ export class VisualNovelRuntime {
                 break;
             
             case "next": 
+                this.variables['_autosave'] = step.label; // SAVE IT TO VARS
                 if(this.events.onAutoSave) this.events.onAutoSave(step.label);
+                this._updateDebug(); // Update UI so we see the variable change
                 proceed(); 
                 break;
 
@@ -236,24 +257,15 @@ export class VisualNovelRuntime {
         }
     }
 
-    _modVar(scope, step, scopeName) {
+    _modVar(scope, step) {
         const key = step.var;
-        const oldVal = scope[key];
-        
         if(scope[key] === undefined) scope[key] = 0;
 
-        if(step.action === "modify_var") {
-            scope[key] = step.value;
-        } 
-        else if(step.action === "increment_var") {
-            scope[key] += step.value;
-        } 
-        else if(step.action === "subtract_var") {
-            scope[key] -= step.value;
-        }
+        if(step.action === "modify_var") scope[key] = step.value;
+        else if(step.action === "increment_var") scope[key] += step.value;
+        else if(step.action === "subtract_var") scope[key] -= step.value;
         
-        this._log("VAR", `${scopeName} '${key}': ${oldVal} -> ${scope[key]}`);
-        this._updateDebug();
+        this._updateDebug(); // Update UI
     }
 
     _checkCondition(step) {
@@ -284,12 +296,14 @@ export class VisualNovelRuntime {
 
     _finish() {
         this.state = this.STATES.ENDED;
-        this._log("FLOW", "Script Finished");
         if(this.events.onFinish) this.events.onFinish();
         this._updateDebug();
     }
     
     _updateDebug() {
-        if(this.events.onUpdateDebug) this.events.onUpdateDebug(this.globals, this.variables, this.state);
+        // This is the hook the Editor will use
+        if(this.events.onUpdateDebug) {
+            this.events.onUpdateDebug(this.globals, this.variables, this.state);
+        }
     }
 }
