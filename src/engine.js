@@ -6,8 +6,6 @@ export class VisualNovelRuntime {
         this.state = this.STATES.IDLE;
         this.variables = {}; 
         this.globals = {};
-        // Preserved this even though it wasn't used in the logic yet, 
-        // in case you want to extend it later.
         this.environment = { isNight: false, isDay: true };
         
         // Hooks
@@ -130,10 +128,34 @@ export class VisualNovelRuntime {
                 this._updateDebug();
                 break;
 
+           // Inside VisualNovelRuntime -> _step()
+
             case "show_sprite":
-                // Handle dynamic locations (e.g. outfits)
-                const finalLoc = this._parseString(step.location);
-                if(this.events.onShowSprite) this.events.onShowSprite({ ...step, finalLocation: finalLoc });
+                let finalLoc = null;
+
+                // 1. Try to handle dynamic location first
+                if (step.dyn_location) {
+                    const parsed = this._parseString(step.dyn_location);
+                    
+                    // CHECK: If the result still contains tags like <key>, 
+                    // it means the variable was missing in your _parseString logic.
+                    // We only use it if it looks like a clean path.
+                    if (!/<.*?>/.test(parsed)) {
+                        finalLoc = parsed;
+                    } else {
+                        this._log("WARN", `Dynamic sprite '${step.dyn_location}' failed to resolve vars. Falling back.`);
+                    }
+                }
+
+                // 2. Fallback to standard location if dynamic failed or wasn't present
+                if (!finalLoc) {
+                    finalLoc = this._parseString(step.location);
+                }
+
+                if(this.events.onShowSprite) {
+                    this.events.onShowSprite({ ...step, finalLocation: finalLoc });
+                }
+                
                 proceed();
                 break;
 
