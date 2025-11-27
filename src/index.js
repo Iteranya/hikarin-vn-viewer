@@ -7,13 +7,16 @@ export default class HikarinVN {
         this.renderer = new VNRenderer(containerId, this.runtime, options);
         
         const savedGlobals = options.globals || {};
-        const savedVariables = options.variables || {}; // <--- Extract Variables
+        const savedVariables = options.variables || {};
         
-        // Pass both globals and variables to the runtime
         this.runtime.loadScript(scriptData, savedGlobals, savedVariables);
     }
 
     start() {
         this.runtime.start();
+    }
+
+    setEnvironment(key, value) {
+        this.runtime.setEnvironment(key, value);
     }
 }

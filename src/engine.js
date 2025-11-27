@@ -89,6 +89,16 @@ export class VisualNovelRuntime {
         this._jump(labelToJumpTo);
     }
 
+    setEnvironment(key, value) {
+        if (this.environment.hasOwnProperty(key)) {
+            this._log("FLOW", `Environment updated: ${key} set to ${value}`);
+            this.environment[key] = value;
+            this._updateDebug(); // So the debug view can see the change
+        } else {
+            this._log("WARN", `Attempted to set unknown environment key: '${key}'`);
+        }
+    }
+
     // --- CORE ENGINE ---
 
     _step() {
@@ -204,6 +214,44 @@ export class VisualNovelRuntime {
                 proceed();
                 break;
 
+            case "unlock_dialogues":
+                const dialoguesToUnlock = step.events || [];
+                // Ensure the variable exists and is an array
+                if (!Array.isArray(this.variables._unlocked_dialogues)) {
+                    this.variables._unlocked_dialogues = [];
+                }
+
+                const newlyAdded = [];
+                dialoguesToUnlock.forEach(label => {
+                    // Add only if it's not already in the list to avoid duplicates
+                    if (!this.variables._unlocked_dialogues.includes(label)) {
+                        this.variables._unlocked_dialogues.push(label);
+                        newlyAdded.push(label);
+                    }
+                });
+
+                if (newlyAdded.length > 0) {
+                     this._log("VAR", `Unlocked dialogues: ${newlyAdded.join(', ')}`);
+                     this._updateDebug();
+                }
+                
+                proceed();
+                break;
+
+            case "idle_chat":
+                const availableChats = this.variables._unlocked_dialogues;
+                if (Array.isArray(availableChats) && availableChats.length > 0) {
+                    const randomIndex = Math.floor(Math.random() * availableChats.length);
+                    const randomLabel = availableChats[randomIndex];
+                    this._log("FLOW", `Performing idle chat. Randomly selected: '${randomLabel}'`);
+                    this._jump(randomLabel);
+                    // _jump handles the next step, so no proceed() here
+                } else {
+                    this._log("WARN", "Idle chat triggered, but '_unlocked_dialogues' is empty or not found. Skipping.");
+                    proceed();
+                }
+                break;
+
             case "modify_variable":
                 this._modVar(this.variables, step, "Local");
                 proceed();
@@ -283,13 +331,29 @@ export class VisualNovelRuntime {
     }
 
     _checkCondition(step) {
-        const scope = (step.type === "conditional_global") ? this.globals : this.variables;
         const varName = step.var;
-        const val = scope[varName] !== undefined ? scope[varName] : 0;
         const target = step.value;
-        
+        let val; // The value we are checking
+
+        // NEW LOGIC: Check the environment first!
+        if (this.environment.hasOwnProperty(varName)) {
+            this._log("COND", `Checking Environment property: '${varName}'`);
+            val = this.environment[varName];
+        } 
+        // Then check globals if it's a global conditional
+        else if (step.type === "conditional_global") {
+            this._log("COND", `Checking Global variable: '${varName}'`);
+            val = this.globals[varName] !== undefined ? this.globals[varName] : 0;
+        } 
+        // Fallback to local variables for a standard "conditional"
+        else {
+            this._log("COND", `Checking Local variable: '${varName}'`);
+            val = this.variables[varName] !== undefined ? this.variables[varName] : 0;
+        }
+
         let result = false;
 
+        // The rest of the logic is the same
         if(step.condition === "equal") result = (val === target);
         if(step.condition === "not_equal") result = (val !== target);
         if(step.condition === "greater_than") result = (val > target);
@@ -320,4 +384,6 @@ export class VisualNovelRuntime {
             this.events.onUpdateDebug(this.globals, this.variables, this.state);
         }
     }
+
+    
 }

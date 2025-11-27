@@ -1,6 +1,6 @@
 {
   "name": "hikarin-vn-viewer",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "type": "module",
   "main": "./dist/hikarin-vn-viewer.umd.js",
   "module": "./dist/hikarin-vn-viewer.es.js",
