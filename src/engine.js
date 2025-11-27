@@ -252,6 +252,19 @@ export class VisualNovelRuntime {
                 }
                 break;
 
+            case "random_dialogue":
+                const availableLabels = step.events;
+                if (Array.isArray(availableLabels) && availableLabels.length > 0) {
+                    const randomIndex = Math.floor(Math.random() * availableLabels.length);
+                    const randomLabel = availableLabels[randomIndex];
+                    this._log("FLOW", `Performing random dialogue. Randomly selected: '${randomLabel}'`);
+                    this._jump(randomLabel);
+                } else {
+                    this._log("WARN", "Random dialogue triggered, but 'events' array is empty or not found. Skipping.");
+                    proceed();
+                }
+                break;
+
             case "modify_variable":
                 this._modVar(this.variables, step, "Local");
                 proceed();
