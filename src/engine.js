@@ -99,6 +99,66 @@ export class VisualNovelRuntime {
         }
     }
 
+    // --- PUBLIC API FOR VARIABLE CRUD ---
+
+    // CREATE / UPDATE (Set)
+    setVariable(key, value) {
+        this._log("VAR", `External set LOCAL variable: '${key}' =`, value);
+        this.variables[key] = value;
+        this._updateDebug();
+    }
+
+    setGlobal(key, value) {
+        this._log("VAR", `External set GLOBAL variable: '${key}' =`, value);
+        this.globals[key] = value;
+        this._updateDebug();
+    }
+
+    // READ (Get) - ADDED
+    /**
+     * Public method to read the value of a local variable.
+     * @param {string} key The name of the variable to retrieve.
+     * @returns {*} The value of the variable, or undefined if it doesn't exist.
+     */
+    getVariable(key) {
+        return this.variables[key];
+    }
+
+    /**
+     * Public method to read the value of a global variable.
+     * @param {string} key The name of the global variable to retrieve.
+     * @returns {*} The value of the global variable, or undefined if it doesn't exist.
+     */
+    getGlobal(key) {
+        return this.globals[key];
+    }
+
+    // DELETE - ADDED
+    /**
+     * Public method to delete a local variable.
+     * This is useful for resetting flags completely.
+     * @param {string} key The name of the variable to delete.
+     */
+    deleteVariable(key) {
+        if (this.variables.hasOwnProperty(key)) {
+            this._log("VAR", `External delete LOCAL variable: '${key}'`);
+            delete this.variables[key];
+            this._updateDebug();
+        }
+    }
+
+    /**
+     * Public method to delete a global variable.
+     * @param {string} key The name of the global variable to delete.
+     */
+    deleteGlobal(key) {
+        if (this.globals.hasOwnProperty(key)) {
+            this._log("VAR", `External delete GLOBAL variable: '${key}'`);
+            delete this.globals[key];
+            this._updateDebug();
+        }
+    }
+
     // --- CORE ENGINE ---
 
     _step() {
