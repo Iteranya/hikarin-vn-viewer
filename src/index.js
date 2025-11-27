@@ -66,4 +66,10 @@ export default class HikarinVN {
     deleteGlobal(key) {
         this.runtime.deleteGlobal(key);
     }
+
+    onLog(callback) {
+        if (typeof callback === 'function') {
+            this.runtime.events.onLog = callback;
+        }
+    }
 }

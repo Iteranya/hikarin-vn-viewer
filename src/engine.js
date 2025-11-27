@@ -12,12 +12,14 @@ export class VisualNovelRuntime {
         this.events = {
             onSay: null, onChoice: null, onShowSprite: null, onRemoveSprite: null,
             onBackground: null, onAutoSave: null, onSceneNext: null, onFinish: null,
-            onUpdateDebug: null
+            onUpdateDebug: null, onLog: null
         };
     }
 
     // --- LOGGER (Restored) ---
+    // --- LOGGER (MODIFIED) ---
     _log(category, msg, ...args) {
+        // Step 1: Keep the existing console logging for developer convenience
         const styles = {
             STEP: "color: #00ffff; font-weight: bold;",   // Cyan
             FLOW: "color: #adff2f;",                      // GreenYellow
@@ -25,9 +27,19 @@ export class VisualNovelRuntime {
             COND: "color: #da70d6;",                      // Orchid
             ERR:  "color: #ff4444; font-weight: bold; background: #220000"
         };
-        // We check if console exists just to be safe in weird environments
         if(console && console.log) {
             console.log(`%c[${category}] ${msg}`, styles[category] || "", ...args);
+        }
+
+        // Step 2: Emit an event with a structured log object
+        if (this.events.onLog) {
+            const logEntry = {
+                category: category,  // e.g., "FLOW", "VAR", "ERR"
+                message: msg,        // The main log message string
+                args: args,          // Any additional arguments
+                timestamp: new Date() // Useful for the UI
+            };
+            this.events.onLog(logEntry);
         }
     }
 
@@ -158,6 +170,8 @@ export class VisualNovelRuntime {
             this._updateDebug();
         }
     }
+
+    
 
     // --- CORE ENGINE ---
 
