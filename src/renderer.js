@@ -241,9 +241,19 @@ export class VNRenderer {
             this.elSprites.appendChild(el);
         };
 
-        this.runtime.events.onRemoveSprite = (id) => {
-            const el = this.container.querySelector(`#sprite-${id}`);
-            if(el) el.remove();
+       this.runtime.events.onRemoveSprite = (id) => {
+            // OLD, PROBLEMATIC WAY:
+            // const el = this.container.querySelector(`#sprite-${id}`);
+
+            // NEW, CORRECT WAY using an attribute selector:
+            const el = this.container.querySelector(`[id="sprite-${id}"]`); // This treats the ID as a literal string
+
+            if (el) {
+                el.remove();
+            } else {
+                // This should no longer be triggered
+                console.warn(`Attempted to remove sprite but could not find element with ID: sprite-${id}`);
+            }
         };
 
         this.runtime.events.onBackground = (path) => {
